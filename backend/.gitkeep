@@ -1,0 +1,219 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional
+
+app = FastAPI(
+    title="FactoryOS AI API",
+    version="1.0.0"
+)
+
+# Frontend ko backend se connect karne ke liye
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Temporary data storage
+workers = []
+electricity_bills = []
+vehicle_expenses = []
+meal_expenses = []
+equipment_records = []
+payroll_records = []
+
+
+# ---------- MODELS ----------
+
+class Worker(BaseModel):
+    name: str
+    department: str
+    entry_time: Optional[str] = None
+    exit_time: Optional[str] = None
+
+
+class ElectricityBill(BaseModel):
+    month: str
+    units: float
+    amount: float
+
+
+class VehicleExpense(BaseModel):
+    vehicle: str
+    expense_type: str
+    description: str
+    amount: float
+
+
+class MealExpense(BaseModel):
+    date: str
+    workers: int
+    total_cost: float
+
+
+class Equipment(BaseModel):
+    name: str
+    purchase_cost: float
+    maintenance_cost: float = 0
+    status: str = "Working"
+
+
+class Payroll(BaseModel):
+    worker: str
+    basic_salary: float
+    overtime: float = 0
+    status: str = "Pending"
+
+
+# ---------- HOME ----------
+
+@app.get("/")
+def home():
+    return {
+        "message": "FactoryOS AI Backend is running!",
+        "status": "success"
+    }
+
+
+# ---------- WORKERS ----------
+
+@app.get("/workers")
+def get_workers():
+    return workers
+
+
+@app.post("/workers")
+def add_worker(worker: Worker):
+    new_worker = {
+        "id": len(workers) + 1,
+        **worker.model_dump()
+    }
+
+    workers.append(new_worker)
+    return new_worker
+
+
+# ---------- ELECTRICITY ----------
+
+@app.get("/electricity")
+def get_electricity():
+    return electricity_bills
+
+
+@app.post("/electricity")
+def add_electricity(bill: ElectricityBill):
+    new_bill = {
+        "id": len(electricity_bills) + 1,
+        **bill.model_dump()
+    }
+
+    electricity_bills.append(new_bill)
+    return new_bill
+
+
+# ---------- VEHICLES ----------
+
+@app.get("/vehicles")
+def get_vehicles():
+    return vehicle_expenses
+
+
+@app.post("/vehicles")
+def add_vehicle(expense: VehicleExpense):
+    new_expense = {
+        "id": len(vehicle_expenses) + 1,
+        **expense.model_dump()
+    }
+
+    vehicle_expenses.append(new_expense)
+    return new_expense
+
+
+# ---------- MEALS ----------
+
+@app.get("/meals")
+def get_meals():
+    return meal_expenses
+
+
+@app.post("/meals")
+def add_meal(expense: MealExpense):
+    new_expense = {
+        "id": len(meal_expenses) + 1,
+        **expense.model_dump()
+    }
+
+    meal_expenses.append(new_expense)
+    return new_expense
+
+
+# ---------- EQUIPMENT ----------
+
+@app.get("/equipment")
+def get_equipment():
+    return equipment_records
+
+
+@app.post("/equipment")
+def add_equipment(equipment: Equipment):
+    new_equipment = {
+        "id": len(equipment_records) + 1,
+        **equipment.model_dump()
+    }
+
+    equipment_records.append(new_equipment)
+    return new_equipment
+
+
+# ---------- PAYROLL ----------
+
+@app.get("/payroll")
+def get_payroll():
+    return payroll_records
+
+
+@app.post("/payroll")
+def add_payroll(payroll: Payroll):
+    total_salary = payroll.basic_salary + payroll.overtime
+
+    new_payroll = {
+        "id": len(payroll_records) + 1,
+        **payroll.model_dump(),
+        "total_salary": total_salary
+    }
+
+    payroll_records.append(new_payroll)
+    return new_payroll
+
+
+# ---------- DASHBOARD ----------
+
+@app.get("/dashboard")
+def dashboard():
+
+    electricity_total = sum(
+        x["amount"] for x in electricity_bills
+    )
+
+    vehicle_total = sum(
+        x["amount"] for x in vehicle_expenses
+    )
+
+    meal_total = sum(
+        x["total_cost"] for x in meal_expenses
+    )
+
+    payroll_total = sum(
+        x["total_salary"] for x in payroll_records
+    )
+
+    return {
+        "total_workers": len(workers),
+        "electricity_cost": electricity_total,
+        "vehicle_cost": vehicle_total,
+        "meal_cost": meal_total,
+        "payroll_cost": payroll_total
+    }
